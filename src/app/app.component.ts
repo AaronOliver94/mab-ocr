@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
-import {NgForm} from '@angular/forms';
 import { FileUploadService } from './services/file-upload.service';
 import { OcrRequestService } from './services/ocr-request.service';
+import { NgForm } from '@angular/forms';
+import { ComputerVisionResponse, RecognitionResult } from './models/computer-vision-response.model';
+import { ConstantPool } from '@angular/compiler';
 
 @Component({
   selector: 'app-root',
@@ -10,27 +12,42 @@ import { OcrRequestService } from './services/ocr-request.service';
 })
 export class AppComponent {
   private fileContent: string | ArrayBuffer;
+  private recognisedText: string;
 
 /**
  * @constructor
- * @param {FileUploadService} fileUploadService - The service that provides file oriented helper methods
- * @param {OcrRequestService} ocrRequestService - The service that handles callouts to OCR services
+ * @param {FileUploadService} fileUploadService - A service that provides file oriented helper methods
+ * @param {OcrRequestService} ocrRequestService - A service that handles callouts to OCR services
  */
   constructor(private fileUploadService: FileUploadService, private ocrRequestService: OcrRequestService) {}
-
-/**
- * A function that is called once a user clicks the submit button and wants to perform OCR.
- */
-  private onSubmit(): void {
-  }
-
-
 
 /**
  * A listener function that handles a users file input.
  * @param {FileList} files - The list of files that is retrieved from the input field
  */
   private handleFileInput(files: FileList) {
-    this.fileContent = this.fileUploadService.convertToByteArray(files.item(0));
+    const file = files.item(0);
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      console.log('reader result: ', reader.result);
+      this.fileContent = reader.result;
+    };
+
+    reader.readAsArrayBuffer(file);
+  }
+
+
+/**
+ * A function that is called once a user clicks the submit button and wants to perform OCR.
+ * @param {NgForm} form - Used to validate a form upon submittion.
+ */
+  private onSubmit(form: NgForm): void {
+    if (!form.valid) {
+      return;
+    }
+
+    const results = this.ocrRequestService.postOCRRequest(this.fileContent);
+    console.log(results);
   }
 }
