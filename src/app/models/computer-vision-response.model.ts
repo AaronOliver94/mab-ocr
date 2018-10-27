@@ -1,6 +1,6 @@
 export class ComputerVisionResponse {
     status: string;
-    recognitionResult: Array<RecognitionResult>;
+    recognitionResult: RecognitionResult;
 }
 
 export class RecognitionResult {

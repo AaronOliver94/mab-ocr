@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { catchError, map, switchMap, delay } from 'rxjs/operators';
 import { Observable} from 'rxjs';
 import { ComputerVisionResponse, RecognitionResult } from '../models/computer-vision-response.model';
@@ -12,23 +12,33 @@ export class OcrRequestService {
 
   constructor(private http: HttpClient) {}
 
-  public async postOCRRequest(fileContent: string | ArrayBuffer): Promise<ComputerVisionResponse> {
+  public async postOCRRequest(fileContent: string | ArrayBuffer): Promise<RecognitionResult> {
+    console.log('the file content: ', fileContent);
     const operationLocation: string = await this.submitForProcessing(fileContent);
-    const result: ComputerVisionResponse = await this.getResults(operationLocation);
-    return result;
+    return await this.getResults(operationLocation);
   }
 
   private submitForProcessing(fileContent: string | ArrayBuffer): Promise<string> {
-    console.log('submit for processing');
-    const httpOptions = this.buildHttpOptions();
     const uri = 'https://northeurope.api.cognitive.microsoft.com/vision/v2.0/recognizeText';
 
     return new Promise ((resolve, reject) => {
-      this.http.post(uri, fileContent, httpOptions)
+      this.http.post(uri, fileContent, {
+        headers: new HttpHeaders({
+          'Content-Type': 'application/octet-stream',
+          'Ocp-Apim-Subscription-Key' : '5816fb0edf074824b8d3bb1548bef0b9',
+        }),
+        observe: 'response',
+        params: {
+          'mode': 'Handwritten'
+        }
+      })
       .subscribe(
-        (res: Response) => {
-          if (res.status >= 200 && res.status < 300) {
-            resolve(res.headers['Operation-Location']);
+        (res: HttpResponse<Object>) => {
+          const keys = res.headers.keys();
+          const headers = keys.map(key => `${key}: ${res.headers.get(key)}`);
+
+          if (res.status === 202) {
+            resolve(headers.find((element: string) => element.startsWith('Operation-Location')).split('Operation-Location: ')[1]);
           } else {
             reject(new Error(`Failed to submit for processing. Request returned this status code: ${res.status}`));
           }
@@ -37,27 +47,25 @@ export class OcrRequestService {
     });
   }
 
-  private getResults(operationLocation: string): Promise<any> {
-    console.log('get results');
-    return new Promise ((resolve, reject) => {
-      this.http.get(operationLocation)
-      .pipe(
-        map((res: Response) => res.json())
-      ).subscribe((res) => resolve(res),
-        err => reject(this.errorHandler(err)));
+  private getResults(operationLocation: string): Promise<RecognitionResult> {
+    return new Promise(
+      (resolve, reject) => {
+        setTimeout(() => {
+          this.http.get(operationLocation, {
+            headers: new HttpHeaders({'Ocp-Apim-Subscription-Key' : '5816fb0edf074824b8d3bb1548bef0b9',
+            'Accept': 'application/json', 'Content-Type': 'application/json'})
+          }).subscribe(
+            (res: ComputerVisionResponse) => {
+              if (res.status === 'Succeeded') {
+                const recognitionResult: RecognitionResult = res.recognitionResult;
+                resolve(recognitionResult);
+              } else {
+                reject(new Error(`The OCR service failed to read the image, it returned this status: ${res.status}`));
+              }
+            },
+            err => reject(this.errorHandler(err)));
+        }, 10000);
     });
-  }
-
-  private buildHttpOptions() {
-    return {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/octet-stream',
-        'Ocp-Apim-Subscription-Key' : '5816fb0edf074824b8d3bb1548bef0b9'
-      }),
-      params: {
-        'mode': 'Handwritten'
-      }
-    };
   }
 
   private errorHandler(error: Observable<Error>): Observable<Error> {

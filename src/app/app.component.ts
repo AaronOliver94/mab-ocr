@@ -47,7 +47,10 @@ export class AppComponent {
       return;
     }
 
-    const results = this.ocrRequestService.postOCRRequest(this.fileContent);
-    console.log(results);
+    this.ocrRequestService.postOCRRequest(this.fileContent)
+    .then((res: RecognitionResult) => {
+      const lineArr = res.lines.map(line => line.text);
+      this.recognisedText = lineArr.join(' ');
+    });
   }
 }

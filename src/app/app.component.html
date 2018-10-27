@@ -8,3 +8,7 @@
 </div>
   <button type="submit" [disabled]="uploadForm.invalid" class="btn btn-success">Submit</button>
 </form>
+
+<div class="container" *ngIf="this.recognisedText != null">
+  {{this.recognisedText}}
+</div>
