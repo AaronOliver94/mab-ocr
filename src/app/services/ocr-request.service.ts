@@ -13,7 +13,6 @@ export class OcrRequestService {
   constructor(private http: HttpClient) {}
 
   public async postOCRRequest(fileContent: string | ArrayBuffer): Promise<RecognitionResult> {
-    console.log('the file content: ', fileContent);
     const operationLocation: string = await this.submitForProcessing(fileContent);
     return await this.getResults(operationLocation);
   }

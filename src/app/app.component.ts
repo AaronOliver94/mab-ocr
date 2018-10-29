@@ -30,7 +30,6 @@ export class AppComponent {
     const reader = new FileReader();
 
     reader.onloadend = () => {
-      console.log('reader result: ', reader.result);
       this.fileContent = reader.result;
     };
 
