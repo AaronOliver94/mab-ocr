@@ -2,12 +2,15 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Observable} from 'rxjs';
 import { ComputerVisionResponse, RecognitionResult } from '../models/computer-vision-response.model';
+import { Document } from '../models/cognitive-services.model';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class OcrRequestService {
+  private documents = Array<Document>();
+  readonly accessKey = '5816fb0edf074824b8d3bb1548bef0b9';
 
   constructor(private http: HttpClient) {}
   /**
@@ -29,11 +32,11 @@ export class OcrRequestService {
   private submitForProcessing(fileContent: string | ArrayBuffer): Promise<string> {
     const uri = 'https://northeurope.api.cognitive.microsoft.com/vision/v2.0/recognizeText';
 
-    return new Promise ((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       this.http.post(uri, fileContent, {
         headers: new HttpHeaders({
           'Content-Type': 'application/octet-stream',
-          'Ocp-Apim-Subscription-Key' : '5816fb0edf074824b8d3bb1548bef0b9',
+          'Ocp-Apim-Subscription-Key' : this.accessKey,
         }),
         observe: 'response',
         params: {
@@ -62,8 +65,7 @@ export class OcrRequestService {
    * @returns {Promise<RecognitionResult>} - An object containing the text that has been recognised.
    */
   private getResults(operationLocation: string): Promise<RecognitionResult> {
-    return new Promise(
-      (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         setTimeout(() => {
           this.http.get(operationLocation, {
             headers: new HttpHeaders({'Ocp-Apim-Subscription-Key' : '5816fb0edf074824b8d3bb1548bef0b9',
@@ -81,6 +83,49 @@ export class OcrRequestService {
         }, 10000);
     });
   }
+
+  public getTextAnalysis(body: string) {
+    this.marshalDocuments(body);
+
+    this.getKeyTerms(this.documents);
+    this.getSentiment(this.documents);
+  }
+
+  private marshalDocuments(body: string) {
+    const idNum = (this.documents.length++).toString();
+
+    if (body.length >= 5000) {
+      const validText = body.slice(0, 4999);
+      const para = validText.slice(0, validText.lastIndexOf('. '));
+
+      this.documents.push({id: idNum, language: 'en', text: para});
+      this.marshalDocuments(body.slice(para.length - 1));
+    } else {
+      this.documents.push({id: idNum, language: 'en', text: body});
+    }
+  }
+
+  private getKeyTerms(documents: Array<Document>) {
+    const uri = 'https://northeurope.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases';
+
+    return new Promise((resolve, reject) => {
+      this.http.post(uri, {documents}, {
+        headers: new HttpHeaders({
+          // 'Content-Type': 'application/octet-stream',
+          'Ocp-Apim-Subscription-Key' : this.accessKey,
+        })
+      }).subscribe((res: Response) => {
+        if (res.status === 200) {
+
+        }
+      });
+    });
+  }
+
+  private getSentiment(documents: Array<Document>) {
+
+  }
+
   /**
    *
    * @param {Observable<Error>} error - Any error returned by the callouts.

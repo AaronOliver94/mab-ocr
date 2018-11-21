@@ -1,13 +1,13 @@
 export class ComputerVisionResponse {
-    status: string;
-    recognitionResult: RecognitionResult;
+  status: string;
+  recognitionResult: RecognitionResult;
 }
 
 export class RecognitionResult {
-   lines: Array<LineResult>;
+  lines: Array<LineResult>;
 }
 
 export class LineResult {
-    boundingBox: Array<number>;
-    text: string;
+  boundingBox: Array<number>;
+  text: string;
 }
