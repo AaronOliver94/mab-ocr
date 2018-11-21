@@ -10,6 +10,7 @@ import { RecognitionResult } from './models/computer-vision-response.model';
 })
 export class AppComponent {
   private fileContent: string | ArrayBuffer;
+  private imgUrl: string;
   private recognisedText: string;
 
 /**
@@ -24,15 +25,10 @@ export class AppComponent {
  */
   private handleFileInput(files: FileList): void {
     const file = files.item(0);
-    const reader = new FileReader();
 
-    reader.onloadend = () => {
-      this.fileContent = reader.result;
-    };
-
-    reader.readAsArrayBuffer(file);
+    this.getFileContent(file);
+    this.getImageUrl(file);
   }
-
 
 /**
  * A function that is called once a user clicks the submit button and wants to perform OCR.
@@ -48,5 +44,23 @@ export class AppComponent {
       const lineArr = res.lines.map(line => line.text);
       this.recognisedText = lineArr.join(' ');
     });
+  }
+
+  private getImageUrl(file: File) {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onloadend = () => {
+      this.imgUrl = reader.result.toString();
+    };
+  }
+
+  private getFileContent(file) {
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+
+    reader.onloadend = () => {
+      this.fileContent = reader.result;
+    };
   }
 }

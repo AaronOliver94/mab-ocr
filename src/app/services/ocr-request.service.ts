@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
-import { map } from 'rxjs/operators';
 import { Observable} from 'rxjs';
 import { ComputerVisionResponse, RecognitionResult } from '../models/computer-vision-response.model';
 
@@ -44,10 +43,10 @@ export class OcrRequestService {
       .subscribe(
         (res: HttpResponse<Object>) => {
           const keys = res.headers.keys();
-          const headers = keys.map(key => `${key}: ${res.headers.get(key)}`);
+          const headers = keys.map(key => `${key.toLowerCase()}: ${res.headers.get(key)}`);
 
           if (res.status === 202) {
-            resolve(headers.find((element: string) => element.startsWith('Operation-Location')).split('Operation-Location: ')[1]);
+            resolve(headers.find((element: string) => element.startsWith('operation-location')).split('operation-location: ')[1]);
           } else {
             reject(new Error(`Failed to submit for processing. Request returned this status code: ${res.status}`));
           }
@@ -88,6 +87,6 @@ export class OcrRequestService {
    * @returns {Observable<Error>} - returns
    */
   private errorHandler(error: Observable<Error>): Observable<Error> {
-    throw new Error(`An error has occurred when calling out to the OCR service. Received this error: ${error}`);
+    throw new Error(`An error has occurred when calling out to the OCR service. Received this error: ${JSON.stringify(error)}`);
   }
 }

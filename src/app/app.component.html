@@ -5,7 +5,10 @@
     <input type="file"
            id="file"
            (change)="handleFileInput($event.target.files)">
-</div>
+  </div>
+  <div class="col-sm-6">
+    <img *ngIf="this.imgUrl" [src]="this.imgUrl" style='height: 100%; width: 100%; object-fit: contain'>
+  </div>
   <button type="submit" [disabled]="uploadForm.invalid" class="btn btn-success">Submit</button>
 </form>
 
