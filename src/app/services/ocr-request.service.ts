@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
-import { catchError, map, switchMap, delay } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { Observable} from 'rxjs';
 import { ComputerVisionResponse, RecognitionResult } from '../models/computer-vision-response.model';
 
@@ -11,12 +11,22 @@ import { ComputerVisionResponse, RecognitionResult } from '../models/computer-vi
 export class OcrRequestService {
 
   constructor(private http: HttpClient) {}
-
+  /**
+   * This method makes two calls out the the OCR API and then returns a promise with the results.
+   * @param {string | ArrayBuffer} fileContent - The contents of the file that has been uploaded.
+   * @returns {Promise<RecognitionResult>} - The results of the OCR service.
+   */
   public async postOCRRequest(fileContent: string | ArrayBuffer): Promise<RecognitionResult> {
     const operationLocation: string = await this.submitForProcessing(fileContent);
     return await this.getResults(operationLocation);
   }
 
+  /**
+   * This method makes the first of two calls to Azure's OCR API. It posts the file content to
+   * the service, which then returns the location of the result as a URL.
+   * @param {string | ArrayBuffer} fileContent - The contents of the file that has been uploaded.
+   * @returns {Promise<string>} - A url that is required by the second API call.
+   */
   private submitForProcessing(fileContent: string | ArrayBuffer): Promise<string> {
     const uri = 'https://northeurope.api.cognitive.microsoft.com/vision/v2.0/recognizeText';
 
@@ -46,6 +56,12 @@ export class OcrRequestService {
     });
   }
 
+  /**
+   * This is the second of the two calls to the OCR API. It uses the operation location that was
+   * returned from the first call to retrieve the results.
+   * @param {string} operationLocation - The location that the OCR service's results can be found.
+   * @returns {Promise<RecognitionResult>} - An object containing the text that has been recognised.
+   */
   private getResults(operationLocation: string): Promise<RecognitionResult> {
     return new Promise(
       (resolve, reject) => {
@@ -66,7 +82,11 @@ export class OcrRequestService {
         }, 10000);
     });
   }
-
+  /**
+   *
+   * @param {Observable<Error>} error - Any error returned by the callouts.
+   * @returns {Observable<Error>} - returns
+   */
   private errorHandler(error: Observable<Error>): Observable<Error> {
     throw new Error(`An error has occurred when calling out to the OCR service. Received this error: ${error}`);
   }

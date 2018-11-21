@@ -1,9 +1,7 @@
 import { Component } from '@angular/core';
-import { FileUploadService } from './services/file-upload.service';
 import { OcrRequestService } from './services/ocr-request.service';
 import { NgForm } from '@angular/forms';
-import { ComputerVisionResponse, RecognitionResult } from './models/computer-vision-response.model';
-import { ConstantPool } from '@angular/compiler';
+import { RecognitionResult } from './models/computer-vision-response.model';
 
 @Component({
   selector: 'app-root',
@@ -16,16 +14,15 @@ export class AppComponent {
 
 /**
  * @constructor
- * @param {FileUploadService} fileUploadService - A service that provides file oriented helper methods
  * @param {OcrRequestService} ocrRequestService - A service that handles callouts to OCR services
  */
-  constructor(private fileUploadService: FileUploadService, private ocrRequestService: OcrRequestService) {}
+  constructor(private ocrRequestService: OcrRequestService) {}
 
 /**
  * A listener function that handles a users file input.
  * @param {FileList} files - The list of files that is retrieved from the input field
  */
-  private handleFileInput(files: FileList) {
+  private handleFileInput(files: FileList): void {
     const file = files.item(0);
     const reader = new FileReader();
 
@@ -39,7 +36,7 @@ export class AppComponent {
 
 /**
  * A function that is called once a user clicks the submit button and wants to perform OCR.
- * @param {NgForm} form - Used to validate a form upon submittion.
+ * @param {NgForm} form - Used to validate a form upon submission.
  */
   private onSubmit(form: NgForm): void {
     if (!form.valid) {
