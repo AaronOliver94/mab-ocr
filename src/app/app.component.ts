@@ -43,6 +43,7 @@ export class AppComponent {
     .then((res: RecognitionResult) => {
       const lineArr = res.lines.map(line => line.text);
       this.recognisedText = lineArr.join(' ');
+      this.ocrRequestService.postTextForAnalysis(this.recognisedText);
     });
   }
 

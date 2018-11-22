@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Observable} from 'rxjs';
 import { ComputerVisionResponse, RecognitionResult } from '../models/computer-vision-response.model';
-import { Document } from '../models/cognitive-services.model';
+import { Document, CognitiveServicesResponse, KeyPhrasesResponse, SentimentResponse } from '../models/cognitive-services.model';
 
 
 @Injectable({
@@ -54,7 +54,7 @@ export class OcrRequestService {
             reject(new Error(`Failed to submit for processing. Request returned this status code: ${res.status}`));
           }
         },
-        err => reject(this.errorHandler(err)));
+        (err: Observable<Error>) => reject(this.errorHandler(err)));
     });
   }
 
@@ -79,16 +79,31 @@ export class OcrRequestService {
                 reject(new Error(`The OCR service failed to read the image, it returned this status: ${res.status}`));
               }
             },
-            err => reject(this.errorHandler(err)));
+            (err: Observable<Error>) => reject(this.errorHandler(err)));
         }, 10000);
     });
   }
 
-  public getTextAnalysis(body: string) {
+  public postTextForAnalysis(body: string): Array<Object> {
     this.marshalDocuments(body);
+    const requests = ['keyPhrases', 'sentiment'];
+    const promises = Array<Promise<Array<KeyPhrasesResponse | SentimentResponse>>>();
+    const res = Array<Object>();
 
-    this.getKeyTerms(this.documents);
-    this.getSentiment(this.documents);
+    requests.forEach(req => {
+      promises.push(this.getTextAnalysis(this.documents, req));
+    });
+
+    Promise.all(promises)
+    .then((results: Array<any>) => {
+      for (let index = 0; index < results.length; index++) {
+        const analysis: KeyPhrasesResponse | SentimentResponse = results[index];
+        const service: string = results[index];
+        res.push({service: analysis});
+      }
+    });
+
+    return res;
   }
 
   private marshalDocuments(body: string) {
@@ -105,8 +120,8 @@ export class OcrRequestService {
     }
   }
 
-  private getKeyTerms(documents: Array<Document>) {
-    const uri = 'https://northeurope.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases';
+  private getTextAnalysis(documents: Array<Document>, analysisService: string): Promise<Array<KeyPhrasesResponse | SentimentResponse>> {
+    const uri = 'https://northeurope.api.cognitive.microsoft.com/text/analytics/v2.0/' + analysisService;
 
     return new Promise((resolve, reject) => {
       this.http.post(uri, {documents}, {
@@ -114,16 +129,19 @@ export class OcrRequestService {
           // 'Content-Type': 'application/octet-stream',
           'Ocp-Apim-Subscription-Key' : this.accessKey,
         })
-      }).subscribe((res: Response) => {
+      }).subscribe((res: CognitiveServicesResponse) => {
         if (res.status === 200) {
-
+          resolve(res.documents);
+        } else if (res.errors) {
+          reject(new Error(`Failed to retrieve key phrases, it returned this error: ${res.errors}`));
+        } else {
+          reject(new Error(`Failed to retrieve key phrases, it returned this status: ${res.status}`));
         }
+      },
+      (err: Observable<Error>) => {
+        reject(this.errorHandler(err));
       });
     });
-  }
-
-  private getSentiment(documents: Array<Document>) {
-
   }
 
   /**
